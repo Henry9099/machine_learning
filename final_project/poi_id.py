@@ -21,7 +21,7 @@ with open("final_project_dataset.pkl", "r") as data_file:
 	data_dict = pickle.load(data_file)
 
 ### Task 2: Remove outliers
-def graph_feature_distribution(feature):
+def graph_feature_distribution(data_dict, feature):
 	feature_data = []
 	for elem in data_dict:
 		feature_data.append(data_dict[elem][feature])
@@ -50,22 +50,27 @@ def find_fence(feature):
 	return outer_max, outer_min
 	
 
-def remove_feature_outliers(feature):
+def remove_feature_outliers(data_dict, feature):
 	upper, lower = find_fence(feature)
 	data_dict_clean = {}
+	elem_to_remove = []
 
 	for elem in data_dict:
 		value = data_dict[elem][feature]
-		if not (value != 'NaN' and (value > upper or value < lower)):
+		if  value == 'NaN' or (value < upper and value > lower):
 			data_dict_clean[elem] = data_dict[elem]
+		else:
+			elem_to_remove.append(elem)
+	return elem_to_remove
 
-	return data_dict_clean
 
-
-def remove_all_outliers(features_list):
+def remove_all_outliers(data_dictionary, features_list):
 	for feature in features_list:
-		data_dict_clean = remove_feature_outliers(feature)
-	return data_dict_clean
+		people_to_remove = remove_feature_outliers(data_dictionary, feature)
+		for person in people_to_remove:
+			del data_dictionary[person]
+
+	return data_dictionary
 
 
 
@@ -96,35 +101,21 @@ def scale_all_features(features_list):
 		data_dict = scale_feature(feature)
 	return data_dict
 
-def run(features):
+def run(data_dict, features):
 	features.remove('poi')
-	data_dict = remove_all_outliers(features)
+	data_dict = remove_all_outliers(data_dict, features)
 	data_dict = scale_all_features(features)
 
 	return data_dict
 
 
-data_dict = run(features_list)
-
-
-
-
 ### Store to my_dataset for easy export below.
-my_dataset = data_dict
+my_dataset = run(data_dict, features_list)
 
-print data_dict
+#graph_feature_distribution(my_dataset, 'salary')
 
 ### Extract features and labels from dataset for local testing
 data = featureFormat(my_dataset, features_list, sort_keys = True)
-
-'''
-for entry in data:
-	if entry[0] == 0:
-		entry[0] = True
-	else:
-		entry[0] = False
-'''
-print data[0:5]
 
 labels, features = targetFeatureSplit(data)
 
@@ -161,9 +152,9 @@ features_train, features_test, labels_train, labels_test = \
 
 if False:
 	clf = GaussianNB()
-	clf.fit(features_train,labels_train)
-	pred = clf.predict(features_test)
-	accuracy = accuracy_score(pred, labels_test)
+	clf.fit(features,labels)
+	pred = clf.predict(features)
+	accuracy = accuracy_score(pred, labels)
 	recall = recall_score(pred, labels_test)
 	precision = precision_score(pred, labels_test)
 	print 'accuracy of Naive Bayes is: ' + str(accuracy)
@@ -173,7 +164,7 @@ if False:
 	for i in range(0,len(pred)):
 		print pred[i], labels_test[i]
 
-if True:
+if False:
 	clf = SVC(kernel = 'rbf', gamma = 20, C = 20)
 	clf.fit(features_train,labels_train)
 	pred = clf.predict(features_test)
@@ -232,6 +223,6 @@ if False:
 ### that the version of poi_id.py that you submit can be run on its own and
 ### generates the necessary .pkl files for validating your results.
 
-dump_classifier_and_data(clf, my_dataset, features_list)
+#dump_classifier_and_data(clf, my_dataset, features_list)
 
 
