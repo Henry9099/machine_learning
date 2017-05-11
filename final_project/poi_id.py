@@ -78,6 +78,36 @@ data_dict = remove_all_outliers(data_dict, features_list)
 
 
 ### Task 3: Create new feature(s)
+from sklearn.preprocessing import MinMaxScaler
+
+def scale_feature(feature):
+	value_list = []
+	for elem in data_dict:
+		value_list.append(data_dict[elem][feature])
+	feature_numpy = np.asarray(value_list).astype(float)
+	feat_num_cl = feature_numpy[~np.isnan(feature_numpy)]
+	scaler = MinMaxScaler()
+	rescaled_feature = scaler.fit_transform(feat_num_cl)
+
+	i = 0
+	for elem in data_dict:
+		if data_dict[elem][feature] != 'NaN':
+			data_dict[elem][feature] = rescaled_feature[i]
+	return data_dict
+
+
+
+def scale_all_features(features_list):
+	for feature in features_list:
+		data_dict = scale_feature(feature)
+	return data_dict
+
+
+data_dict = scale_all_features(features_list)
+
+
+#scaled_salary = scale_feature('salary')
+
 ### Store to my_dataset for easy export below.
 my_dataset = data_dict
 
