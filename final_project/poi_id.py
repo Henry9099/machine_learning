@@ -22,6 +22,7 @@ with open("final_project_dataset.pkl", "r") as data_file:
 
 ### Task 2: Remove outliers
 def graph_feature_distribution(data_dict, feature):
+	# create a histogram of the feature's distribution
 	feature_data = []
 	for elem in data_dict:
 		feature_data.append(data_dict[elem][feature])
@@ -37,6 +38,7 @@ def graph_feature_distribution(data_dict, feature):
 	plt.show()
 
 def find_fence(feature):
+	# using a very wide fence as i only intend to catch extreme outliers/ wrong data entries
 	feature_data = []
 	for elem in data_dict:
 		feature_data.append(data_dict[elem][feature])
@@ -51,6 +53,7 @@ def find_fence(feature):
 	
 
 def remove_feature_outliers(data_dict, feature):
+	# remove the outliers for a particular feature
 	upper, lower = find_fence(feature)
 	data_dict_clean = {}
 	elem_to_remove = []
@@ -65,6 +68,7 @@ def remove_feature_outliers(data_dict, feature):
 
 
 def remove_all_outliers(data_dictionary, features_list):
+	# loop through all features in feature list and remove outliers
 	for feature in features_list:
 		people_to_remove = remove_feature_outliers(data_dictionary, feature)
 		for person in people_to_remove:
@@ -79,6 +83,7 @@ def remove_all_outliers(data_dictionary, features_list):
 from sklearn.preprocessing import MinMaxScaler
 
 def min_max(feature):
+	#find minimum and maximum value of feature, ignoring NaNs
 	value_list = []
 	for elem in data_dict:
 		value_list.append(data_dict[elem][feature])
@@ -89,6 +94,7 @@ def min_max(feature):
 
 
 def scale_feature(feature):
+	# manual MinMax scalar as to avoid NaNs
 	mini, maxi = min_max(feature)
 	for elem in data_dict:
 		value = data_dict[elem][feature]
@@ -97,11 +103,13 @@ def scale_feature(feature):
 	return data_dict
 
 def scale_all_features(features_list):
+	#loop through all features and scale
 	for feature in features_list:
 		data_dict = scale_feature(feature)
 	return data_dict
 
 def run(data_dict, features):
+	# remove all outliers and scale all features except our target 'poi'
 	features.remove('poi')
 	data_dict = remove_all_outliers(data_dict, features)
 	data_dict = scale_all_features(features)
@@ -112,10 +120,21 @@ def run(data_dict, features):
 ### Store to my_dataset for easy export below.
 my_dataset = run(data_dict, features_list)
 
+# get example entry from dataset
+i = 0
+for elem in my_dataset:
+	while i < 1:
+		print my_dataset[elem]
+		i +=1
+
 #graph_feature_distribution(my_dataset, 'salary')
 
 ### Extract features and labels from dataset for local testing
 data = featureFormat(my_dataset, features_list, sort_keys = True)
+
+# get list of poi entries after featureFormat has been run
+for row in data:
+	print row[0]
 
 labels, features = targetFeatureSplit(data)
 
