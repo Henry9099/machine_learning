@@ -73,22 +73,23 @@ def remove_all_outliers(features_list):
 ### Task 3: Create new feature(s)
 from sklearn.preprocessing import MinMaxScaler
 
-def scale_feature(feature):
+def min_max(feature):
 	value_list = []
 	for elem in data_dict:
 		value_list.append(data_dict[elem][feature])
 	feature_numpy = np.asarray(value_list).astype(float)
-	feat_num_cl = feature_numpy[~np.isnan(feature_numpy)]
-	scaler = MinMaxScaler()
-	rescaled_feature = scaler.fit_transform(feat_num_cl)
+	maxi = np.nanmax(feature_numpy)
+	mini = np.nanmin(feature_numpy)
+	return mini, maxi
 
-	i = 0
+
+def scale_feature(feature):
+	mini, maxi = min_max(feature)
 	for elem in data_dict:
-		if data_dict[elem][feature] != 'NaN':
-			data_dict[elem][feature] = rescaled_feature[i]
+		value = data_dict[elem][feature]
+		if value != 'NaN':
+			data_dict[elem][feature] = (data_dict[elem][feature] - mini) / (maxi - mini)
 	return data_dict
-
-
 
 def scale_all_features(features_list):
 	for feature in features_list:
@@ -104,30 +105,26 @@ def run(features):
 
 
 data_dict = run(features_list)
-'''
-i = 0
-for elem in data_dict:
-	while i <1:
-		print data_dict[elem]
-		i +=1
-'''
+
+
+
 
 ### Store to my_dataset for easy export below.
 my_dataset = data_dict
 
-
+print data_dict
 
 ### Extract features and labels from dataset for local testing
 data = featureFormat(my_dataset, features_list, sort_keys = True)
 
-
+'''
 for entry in data:
 	if entry[0] == 0:
 		entry[0] = True
 	else:
 		entry[0] = False
-
-
+'''
+print data[0:5]
 
 labels, features = targetFeatureSplit(data)
 
@@ -164,24 +161,45 @@ features_train, features_test, labels_train, labels_test = \
 
 if False:
 	clf = GaussianNB()
-	clf.fit(features,labels)
-	pred = clf.predict(features)
-	accuracy = accuracy_score(pred, labels)
+	clf.fit(features_train,labels_train)
+	pred = clf.predict(features_test)
+	accuracy = accuracy_score(pred, labels_test)
+	recall = recall_score(pred, labels_test)
+	precision = precision_score(pred, labels_test)
 	print 'accuracy of Naive Bayes is: ' + str(accuracy)
+	print 'recall of Naive Bayes is: ' + str(recall)
+	print 'precision of Naive Bayes is: ' + str(precision)
 
-if False:
-	clf = SVC(kernel = 'linear')
-	clf.fit(features, labels)
-	pred = clf.predict(features)
-	accuracy = accuracy_score(pred, labels)
+	for i in range(0,len(pred)):
+		print pred[i], labels_test[i]
+
+if True:
+	clf = SVC(kernel = 'rbf', gamma = 20, C = 20)
+	clf.fit(features_train,labels_train)
+	pred = clf.predict(features_test)
+	accuracy = accuracy_score(pred, labels_test)
+	recall = recall_score(pred, labels_test)
+	precision = precision_score(pred, labels_test)
 	print 'accuracy of SVM is: ' + str(accuracy)
+	print 'recall of SVM is: ' + str(recall)
+	print 'precision of SVM is: ' + str(precision)
+
+	for i in range(0,len(pred)):
+		print pred[i], labels_test[i]
 
 if False:
-	clf = tree.DecisionTreeClassifier(min_samples_split = 5)
+	clf = tree.DecisionTreeClassifier(min_samples_split = 10)
 	clf.fit(features_train, labels_train)
 	pred = clf.predict(features_test)
 	accuracy = accuracy_score(pred, labels_test)
-	print 'accuracy of Decision Tree is: ' + str(accuracy)
+	recall = recall_score(pred, labels_test)
+	precision = precision_score(pred, labels_test)
+	print 'accuracy of Decision Trees is: ' + str(accuracy)
+	print 'recall of Decision Trees is: ' + str(recall)
+	print 'precision of Decision Trees is: ' + str(precision)
+
+	for i in range(0,len(pred)):
+		print pred[i], labels_test[i]
 
 def run_classifier(classifier, name, features_train, features_test, labels_train, labels_test):
 	clf = classifier
@@ -196,8 +214,8 @@ def run_classifier(classifier, name, features_train, features_test, labels_train
 
 
 classifiers = {'Naive Bays': [GaussianNB(), 'Naive Bays'],\
-				'SVM': [SVC(kernel = 'rbf', gamma = 10), 'SVM'],\
-				'Decision Tree': [tree.DecisionTreeClassifier(min_samples_split = 100), 'Decision Tree']}
+				'SVM': [SVC(kernel = 'rbf', gamma = 100, C = 100), 'SVM'],\
+				'Decision Tree': [tree.DecisionTreeClassifier(min_samples_split = 10), 'Decision Tree']}
 
 
 def run_all_classifiers(features_train, features_test, labels_train, labels_test):
@@ -206,7 +224,7 @@ def run_all_classifiers(features_train, features_test, labels_train, labels_test
 		run_classifier(classifiers[classifier][0], classifiers[classifier][1], features_train, features_test, labels_train, labels_test)
 
 
-if True:
+if False:
 	run_all_classifiers(features_train, features_test, labels_train, labels_test)
 
 ### Task 6: Dump your classifier, dataset, and features_list so anyone can
@@ -215,3 +233,5 @@ if True:
 ### generates the necessary .pkl files for validating your results.
 
 dump_classifier_and_data(clf, my_dataset, features_list)
+
+
