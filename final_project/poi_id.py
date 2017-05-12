@@ -102,12 +102,11 @@ def create_features(data_dictionary):
 
 data_dict = create_features(data_dict)
 
-
-
-
-
-
-
+'''
+for elem in data_dict:
+	if data_dict[elem]['bonus'] != 'NaN':
+		print elem, data_dict[elem]['poi']
+'''
 
 def min_max(feature):
 	#find minimum and maximum value of feature, ignoring NaNs - now deprecated as done in the Pipline
@@ -213,10 +212,10 @@ if False:
 	accuracy = accuracy_score(pred, labels)
 	recall = recall_score(pred, labels)
 	precision = precision_score(pred, labels)
-	print 'accuracy of Decision Trees is: ' + str(accuracy)
+	print clf
+	'''print 'accuracy of Decision Trees is: ' + str(accuracy)
 	print 'recall of Decision Trees is: ' + str(recall)
-	print 'precision of Decision Trees is: ' + str(precision)
-
+	print 'precision of Decision Trees is: ' + str(precision)'''
 
 
 
@@ -224,10 +223,21 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedShuffleSplit
 
+sss = StratifiedShuffleSplit(random_state = 42)
+
 # decision tree parameters for the GridSearch
 dec_tree_params = {}
 dec_tree_params['dt__min_samples_split'] = [5,10,15,20]
 dec_tree_params['dt__presort'] = [True, False]
+dec_tree_params['dt__max_features'] = [2,4,6,8]
+#dec_tree_params['dt__max_depth'] = [None, 8,6,4,2]
+#dec_tree_params['dt__min_samples_leaf'] = [1,2,5,10]
+#dec_tree_params['dt__max_leaf_nodes'] = [None, 4,8,12,20]
+
+
+
+
+
 
 # SVM parameters for the GridSearch
 svm_params = {}
@@ -248,17 +258,18 @@ class_dict['dt'] = tree.DecisionTreeClassifier()
 class_dict['svm'] = SVC()
 class_dict['NB'] = GaussianNB()
 
+
 def classifier_grid(classifer_name):
 	scaler = MinMaxScaler()
 	classifier = class_dict[classifer_name]
 	gs = Pipeline(steps = [('scaling', scaler), (classifer_name, classifier)])
-	dtcclf = GridSearchCV(gs, params[classifer_name], scoring = 'f1')
-	dtcclf.fit(features, labels)
+	dtcclf = GridSearchCV(gs, params[classifer_name], scoring = 'f1', cv = sss)
+	dtcclf.fit(features_train, labels_train)
 	clf = dtcclf.best_estimator_
-	pred = clf.predict(features)
-	accuracy = accuracy_score(pred, labels)
-	recall = recall_score(pred, labels)
-	precision = precision_score(pred,labels)
+	pred = clf.predict(features_test)
+	accuracy = accuracy_score(pred, labels_test)
+	recall = recall_score(pred, labels_test, average = 'weighted')
+	precision = precision_score(pred,labels_test, average = 'weighted')
 	return clf, accuracy, recall, precision
 
 def tune_classifiers():
@@ -273,14 +284,23 @@ def tune_classifiers():
 	return result_dict
 
 results = tune_classifiers()
-for entry in results:
-	print ""
-	print entry
-	print results[entry]['accuracy']
-	print results[entry]['recall']
-	print results[entry]['precision']
+
+def show_results(results_dict):
+	for entry in results_dict:
+		print ""
+		print entry
+		print 'accuracy: ' + str(results_dict[entry]['accuracy'])
+		print 'recall: ' + str(results_dict[entry]['recall'])
+		print 'precision: ' + str(results_dict[entry]['precision'])
+
+show_results(results)
 
 clf = results['dt']['clf']
+clf = clf.named_steps['dt']
+print clf
+feature_importance = clf.feature_importances_
+print features_list[1:]
+print feature_importance
 
 
 '''
