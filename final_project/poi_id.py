@@ -209,25 +209,88 @@ classifiers = {'Naive Bays': [GaussianNB(), 'Naive Bays'],\
 				'SVM': [SVC(kernel = 'rbf', gamma = 5, C = 5), 'SVM'],\
 				'Decision Tree': [tree.DecisionTreeClassifier(min_samples_split = 10), 'Decision Tree']}
 
+from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import StratifiedShuffleSplit
 
 dec_tree_params = {}
-dec_tree_params['min_samples_split'] = [5,10,15,20]
-dec_tree_params['presort'] = [True, False]
+dec_tree_params['dt__min_samples_split'] = [5,10,15,20]
+dec_tree_params['dt__presort'] = [True, False]
 
 svm_params = {}
-svm_params['kernel'] = ['linear', 'rbf']
-svm_params['C'] = [1,3,5,7,9,15]
+svm_params['svm__kernel'] = ['linear', 'rbf']
+svm_params['svm__C'] = [1,3,5,7,9,15]
+svm_params['svm__gamma'] = [1,3,5,7,9,15]
+
+NB_params = {}
+
+params = {}
+params['dt'] = dec_tree_params
+params['svm'] = svm_params
+params['NB'] = NB_params
+
+class_dict = {}
+class_dict['dt'] = tree.DecisionTreeClassifier()
+class_dict['svm'] = SVC()
+class_dict['NB'] = GaussianNB()
+
+def classifier_grid(classifer_name):
+	scaler = MinMaxScaler()
+	classifier = class_dict[classifer_name]
+	gs = Pipeline(steps = [('scaling', scaler), (classifer_name, classifier)])
+	dtcclf = GridSearchCV(gs, params[classifer_name], scoring = 'f1')
+	dtcclf.fit(features, labels)
+	clf = dtcclf.best_estimator_
+	pred = clf.predict(features)
+	accuracy = accuracy_score(pred, labels)
+	recall = recall_score(pred, labels)
+	precision = precision_score(pred,labels)
+	return clf, accuracy, recall, precision
+
+def tune_classifiers():
+	result_dict = {}
+	for param in params:
+		best_est = classifier_grid(param)
+		result_dict[param] = {}
+		result_dict[param]['clf'] = best_est[0]
+		result_dict[param]['accuracy'] = best_est[1]
+		result_dict[param]['recall'] = best_est[2]
+		result_dict[param]['precision'] = best_est[3]
+	return result_dict
+
+results = tune_classifiers()
+for entry in results:
+	print entry
+	print results[entry]['accuracy']
+	print results[entry]['recall']
+	print results[entry]['precision']
+
+clf = results['dt']['clf']
+
+
+'''
+scaler = MinMaxScaler()
+dt = tree.DecisionTreeClassifier()
+gs = Pipeline(steps = [('scaling', scaler), ('dt', dt)])
+dtcclf = GridSearchCV(gs, dec_tree_params, scoring = 'f1', verbose = 10)
+dtcclf.fit(features,labels)
+clf = dtcclf.best_estimator_
+print clf
+
+pred = clf.predict(features)
+accuracy = accuracy_score(pred, labels)
+print accuracy
+'''
 
 
 
-print dec_tree_params
 
 def run_all_classifiers(features_train, features_test, labels_train, labels_test):
 	for classifier in classifiers:
 		run_classifier(classifiers[classifier][0], classifiers[classifier][1], features_train, features_test, labels_train, labels_test)
 
 
-if True:
+if False:
 	run_all_classifiers(features_train, features_test, labels_train, labels_test)
 
 ### Task 6: Dump your classifier, dataset, and features_list so anyone can
@@ -235,6 +298,6 @@ if True:
 ### that the version of poi_id.py that you submit can be run on its own and
 ### generates the necessary .pkl files for validating your results.
 
-#dump_classifier_and_data(clf, my_dataset, features_list)
+dump_classifier_and_data(clf, my_dataset, features_list)
 
 
