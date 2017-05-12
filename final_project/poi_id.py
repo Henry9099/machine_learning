@@ -110,9 +110,10 @@ def scale_all_features(features_list):
 
 def run(data_dict, features):
 	# remove all outliers and scale all features except our target 'poi'
-	features.remove('poi')
-	data_dict = remove_all_outliers(data_dict, features)
-	data_dict = scale_all_features(features)
+	new_features = list(features)
+	new_features.remove('poi')
+	data_dict = remove_all_outliers(data_dict, new_features)
+	#data_dict = scale_all_features(new_features)
 
 	return data_dict
 
@@ -120,21 +121,12 @@ def run(data_dict, features):
 ### Store to my_dataset for easy export below.
 my_dataset = run(data_dict, features_list)
 
-# get example entry from dataset
-i = 0
-for elem in my_dataset:
-	while i < 1:
-		print my_dataset[elem]
-		i +=1
 
-#graph_feature_distribution(my_dataset, 'salary')
+
 
 ### Extract features and labels from dataset for local testing
 data = featureFormat(my_dataset, features_list, sort_keys = True)
 
-# get list of poi entries after featureFormat has been run
-for row in data:
-	print row[0]
 
 labels, features = targetFeatureSplit(data)
 
@@ -149,10 +141,6 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn import tree
-
-
-
-
 
 
 
@@ -174,67 +162,72 @@ if False:
 	clf.fit(features,labels)
 	pred = clf.predict(features)
 	accuracy = accuracy_score(pred, labels)
-	recall = recall_score(pred, labels_test)
-	precision = precision_score(pred, labels_test)
+	recall = recall_score(pred, labels)
+	precision = precision_score(pred, labels)
 	print 'accuracy of Naive Bayes is: ' + str(accuracy)
 	print 'recall of Naive Bayes is: ' + str(recall)
 	print 'precision of Naive Bayes is: ' + str(precision)
 
-	for i in range(0,len(pred)):
-		print pred[i], labels_test[i]
-
 if False:
-	clf = SVC(kernel = 'rbf', gamma = 20, C = 20)
-	clf.fit(features_train,labels_train)
-	pred = clf.predict(features_test)
-	accuracy = accuracy_score(pred, labels_test)
-	recall = recall_score(pred, labels_test)
-	precision = precision_score(pred, labels_test)
+	clf = SVC(kernel = 'rbf', gamma = 5, C = 5)
+	clf.fit(features,labels)
+	pred = clf.predict(features)
+	accuracy = accuracy_score(pred, labels)
+	recall = recall_score(pred, labels)
+	precision = precision_score(pred, labels)
 	print 'accuracy of SVM is: ' + str(accuracy)
 	print 'recall of SVM is: ' + str(recall)
 	print 'precision of SVM is: ' + str(precision)
 
-	for i in range(0,len(pred)):
-		print pred[i], labels_test[i]
-
 if False:
 	clf = tree.DecisionTreeClassifier(min_samples_split = 10)
-	clf.fit(features_train, labels_train)
-	pred = clf.predict(features_test)
-	accuracy = accuracy_score(pred, labels_test)
-	recall = recall_score(pred, labels_test)
-	precision = precision_score(pred, labels_test)
+	clf.fit(features, labels)
+	pred = clf.predict(features)
+	accuracy = accuracy_score(pred, labels)
+	recall = recall_score(pred, labels)
+	precision = precision_score(pred, labels)
 	print 'accuracy of Decision Trees is: ' + str(accuracy)
 	print 'recall of Decision Trees is: ' + str(recall)
 	print 'precision of Decision Trees is: ' + str(precision)
 
-	for i in range(0,len(pred)):
-		print pred[i], labels_test[i]
 
 def run_classifier(classifier, name, features_train, features_test, labels_train, labels_test):
 	clf = classifier
-	clf.fit(features_train, labels_train)
-	pred = clf.predict(features_test)
-	accuracy = accuracy_score(pred, labels_test)
-	recall = recall_score(pred, labels_test)
-	precision = precision_score(pred, labels_test)
+	clf.fit(features, labels)
+	pred = clf.predict(features)
+	accuracy = accuracy_score(pred, labels)
+	recall = recall_score(pred, labels)
+	precision = precision_score(pred, labels)
+	print '\n'	
 	print 'accuracy of ' + name + ' : ' +str(accuracy)
 	print 'recall of ' + name + ' : ' +str(recall)
 	print 'precision of ' + name + ' : ' +str(precision)
 
 
+
 classifiers = {'Naive Bays': [GaussianNB(), 'Naive Bays'],\
-				'SVM': [SVC(kernel = 'rbf', gamma = 100, C = 100), 'SVM'],\
+				'SVM': [SVC(kernel = 'rbf', gamma = 5, C = 5), 'SVM'],\
 				'Decision Tree': [tree.DecisionTreeClassifier(min_samples_split = 10), 'Decision Tree']}
 
 
+dec_tree_params = {}
+dec_tree_params['min_samples_split'] = [5,10,15,20]
+dec_tree_params['presort'] = [True, False]
+
+svm_params = {}
+svm_params['kernel'] = ['linear', 'rbf']
+svm_params['C'] = [1,3,5,7,9,15]
+
+
+
+print dec_tree_params
+
 def run_all_classifiers(features_train, features_test, labels_train, labels_test):
 	for classifier in classifiers:
-		#print classifiers[classifier][0]
 		run_classifier(classifiers[classifier][0], classifiers[classifier][1], features_train, features_test, labels_train, labels_test)
 
 
-if False:
+if True:
 	run_all_classifiers(features_train, features_test, labels_train, labels_test)
 
 ### Task 6: Dump your classifier, dataset, and features_list so anyone can
