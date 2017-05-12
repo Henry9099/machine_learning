@@ -225,6 +225,7 @@ if False:
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.feature_selection import SelectKBest
 
 sss = StratifiedShuffleSplit(random_state = 42)
 
@@ -232,16 +233,16 @@ sss = StratifiedShuffleSplit(random_state = 42)
 dec_tree_params = {}
 dec_tree_params['dt__min_samples_split'] = [5,10,15,20]
 dec_tree_params['dt__presort'] = [True, False]
-dec_tree_params['dt__max_features'] = [2,4,6,8]
+#dec_tree_params['dt__max_features'] = [2]
 #dec_tree_params['dt__max_depth'] = [None, 8,6,4,2]
 #dec_tree_params['dt__min_samples_leaf'] = [1,2,5,10]
 #dec_tree_params['dt__max_leaf_nodes'] = [None, 4,8,12,20]
 
 # SVM parameters for the GridSearch
 svm_params = {}
-svm_params['svm__kernel'] = ['linear', 'rbf']
 svm_params['svm__C'] = [1,3,5,7,9,15]
 svm_params['svm__gamma'] = [1,3,5,7,9,15]
+svm_params['svm__kernel'] = ['linear', 'rbf']
 
 # Naive Bays parameters for the GridSearch
 NB_params = {}
@@ -256,11 +257,20 @@ class_dict['dt'] = tree.DecisionTreeClassifier()
 class_dict['svm'] = SVC()
 class_dict['NB'] = GaussianNB()
 
+other_params = {}
+other_params['kbest__k'] = [3]
+
+
+for dict in params:
+	for parameter in other_params:
+		params[dict][parameter] = other_params[parameter]
+
 
 def classifier_grid(classifer_name):
 	scaler = MinMaxScaler()
 	classifier = class_dict[classifer_name]
-	gs = Pipeline(steps = [('scaling', scaler), (classifer_name, classifier)])
+	kbest = SelectKBest(k=2)
+	gs = Pipeline(steps = [('scaling', scaler),('kbest', kbest), (classifer_name, classifier)])
 	gclf = GridSearchCV(gs, params[classifer_name], scoring = 'f1', cv = sss)
 	gclf.fit(features, labels)
 	clf = gclf.best_estimator_
