@@ -182,7 +182,7 @@ from sklearn.cross_validation import train_test_split
 features_train, features_test, labels_train, labels_test = \
 	train_test_split(features, labels, test_size=0.3, random_state=42)
 
-
+# deprecated due to classifierGrid below
 if False:
 	clf = GaussianNB()
 	clf.fit(features,labels)
@@ -194,6 +194,8 @@ if False:
 	print 'recall of Naive Bayes is: ' + str(recall)
 	print 'precision of Naive Bayes is: ' + str(precision)
 
+
+# deprecated due to classifierGrid below
 if False:
 	clf = SVC(kernel = 'rbf', gamma = 5, C = 5)
 	clf.fit(features,labels)
@@ -205,6 +207,7 @@ if False:
 	print 'recall of SVM is: ' + str(recall)
 	print 'precision of SVM is: ' + str(precision)
 
+# deprecated due to classifierGrid below
 if False:
 	clf = tree.DecisionTreeClassifier(min_samples_split = 10)
 	clf.fit(features, labels)
@@ -234,11 +237,6 @@ dec_tree_params['dt__max_features'] = [2,4,6,8]
 #dec_tree_params['dt__min_samples_leaf'] = [1,2,5,10]
 #dec_tree_params['dt__max_leaf_nodes'] = [None, 4,8,12,20]
 
-
-
-
-
-
 # SVM parameters for the GridSearch
 svm_params = {}
 svm_params['svm__kernel'] = ['linear', 'rbf']
@@ -263,13 +261,13 @@ def classifier_grid(classifer_name):
 	scaler = MinMaxScaler()
 	classifier = class_dict[classifer_name]
 	gs = Pipeline(steps = [('scaling', scaler), (classifer_name, classifier)])
-	dtcclf = GridSearchCV(gs, params[classifer_name], scoring = 'f1', cv = sss)
-	dtcclf.fit(features_train, labels_train)
-	clf = dtcclf.best_estimator_
-	pred = clf.predict(features_test)
-	accuracy = accuracy_score(pred, labels_test)
-	recall = recall_score(pred, labels_test, average = 'weighted')
-	precision = precision_score(pred,labels_test, average = 'weighted')
+	gclf = GridSearchCV(gs, params[classifer_name], scoring = 'f1', cv = sss)
+	gclf.fit(features, labels)
+	clf = gclf.best_estimator_
+	pred = clf.predict(features)
+	accuracy = accuracy_score(pred, labels)
+	recall = recall_score(pred, labels, average = 'weighted')
+	precision = precision_score(pred,labels, average = 'weighted')
 	return clf, accuracy, recall, precision
 
 def tune_classifiers():
@@ -330,5 +328,3 @@ if False:
 ### generates the necessary .pkl files for validating your results.
 
 dump_classifier_and_data(clf, my_dataset, features_list)
-
-
