@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 ### Task 1: Select what features you'll use.
 ### features_list is a list of strings, each of which is a feature name.
 ### The first feature must be "poi".
-features_list = ['poi','salary', 'bonus', 'expenses', 'exercised_stock_options', 'long_term_incentive', 'restricted_stock'] # You will need to use more features
+features_list = ['poi','salary', 'bonus', 'expenses', 'exercised_stock_options', 'long_term_incentive', 'restricted_stock', 'prop_email_from_poi', 'prop_stock_exercised']
 
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "r") as data_file:
@@ -82,8 +82,35 @@ def remove_all_outliers(data_dictionary, features_list):
 ### Task 3: Create new feature(s)
 from sklearn.preprocessing import MinMaxScaler
 
+def create_features(data_dictionary):
+	for elem in data_dictionary:
+		# add proportion of from_emails from poi
+		try:
+			data_dictionary[elem]['prop_email_from_poi'] = int(data_dictionary[elem]['from_poi_to_this_person']) / int(data_dictionary[elem]['from_messages'])
+		except:
+			data_dictionary[elem]['prop_email_from_poi'] = 'NaN'
+
+		# add exercised_stock_options as proportion of total_stock_value
+		try:
+			data_dictionary[elem]['prop_stock_exercised'] = int(data_dictionary[elem]['exercised_stock_options']) / int(data_dictionary[elem]['total_stock_value'])
+		except:
+			data_dictionary[elem]['prop_stock_exercised'] = 'NaN'
+
+
+
+	return data_dictionary
+
+data_dict = create_features(data_dict)
+
+
+
+
+
+
+
+
 def min_max(feature):
-	#find minimum and maximum value of feature, ignoring NaNs
+	#find minimum and maximum value of feature, ignoring NaNs - now deprecated as done in the Pipline
 	value_list = []
 	for elem in data_dict:
 		value_list.append(data_dict[elem][feature])
@@ -94,7 +121,7 @@ def min_max(feature):
 
 
 def scale_feature(feature):
-	# manual MinMax scalar as to avoid NaNs
+	# manual MinMax scalar as to avoid NaNs - now deprecated as done in the Pipline
 	mini, maxi = min_max(feature)
 	for elem in data_dict:
 		value = data_dict[elem][feature]
@@ -103,7 +130,7 @@ def scale_feature(feature):
 	return data_dict
 
 def scale_all_features(features_list):
-	#loop through all features and scale
+	#loop through all features and scale - now deprecated as done in the Pipline
 	for feature in features_list:
 		data_dict = scale_feature(feature)
 	return data_dict
@@ -191,37 +218,24 @@ if False:
 	print 'precision of Decision Trees is: ' + str(precision)
 
 
-def run_classifier(classifier, name, features_train, features_test, labels_train, labels_test):
-	clf = classifier
-	clf.fit(features, labels)
-	pred = clf.predict(features)
-	accuracy = accuracy_score(pred, labels)
-	recall = recall_score(pred, labels)
-	precision = precision_score(pred, labels)
-	print '\n'	
-	print 'accuracy of ' + name + ' : ' +str(accuracy)
-	print 'recall of ' + name + ' : ' +str(recall)
-	print 'precision of ' + name + ' : ' +str(precision)
 
-
-
-classifiers = {'Naive Bays': [GaussianNB(), 'Naive Bays'],\
-				'SVM': [SVC(kernel = 'rbf', gamma = 5, C = 5), 'SVM'],\
-				'Decision Tree': [tree.DecisionTreeClassifier(min_samples_split = 10), 'Decision Tree']}
 
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedShuffleSplit
 
+# decision tree parameters for the GridSearch
 dec_tree_params = {}
 dec_tree_params['dt__min_samples_split'] = [5,10,15,20]
 dec_tree_params['dt__presort'] = [True, False]
 
+# SVM parameters for the GridSearch
 svm_params = {}
 svm_params['svm__kernel'] = ['linear', 'rbf']
 svm_params['svm__C'] = [1,3,5,7,9,15]
 svm_params['svm__gamma'] = [1,3,5,7,9,15]
 
+# Naive Bays parameters for the GridSearch
 NB_params = {}
 
 params = {}
@@ -260,6 +274,7 @@ def tune_classifiers():
 
 results = tune_classifiers()
 for entry in results:
+	print ""
 	print entry
 	print results[entry]['accuracy']
 	print results[entry]['recall']
@@ -284,10 +299,6 @@ print accuracy
 
 
 
-
-def run_all_classifiers(features_train, features_test, labels_train, labels_test):
-	for classifier in classifiers:
-		run_classifier(classifiers[classifier][0], classifiers[classifier][1], features_train, features_test, labels_train, labels_test)
 
 
 if False:
