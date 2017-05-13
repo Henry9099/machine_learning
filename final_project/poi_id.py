@@ -14,8 +14,8 @@ import matplotlib.pyplot as plt
 ### Task 1: Select what features you'll use.
 ### features_list is a list of strings, each of which is a feature name.
 ### The first feature must be "poi".
-features_list = ['poi','salary', 'bonus', 'expenses', 'exercised_stock_options', 'long_term_incentive', 'restricted_stock', 'prop_email_from_poi', 'prop_stock_exercised']
-
+features_list = ['poi','salary', 'bonus', 'expenses', 'exercised_stock_options', 'long_term_incentive', 'restricted_stock']
+new_features = ['prop_email_from_poi', 'prop_stock_exercised']
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "r") as data_file:
 	data_dict = pickle.load(data_file)
@@ -70,9 +70,11 @@ def remove_feature_outliers(data_dict, feature):
 def remove_all_outliers(data_dictionary, features_list):
 	# loop through all features in feature list and remove outliers
 	for feature in features_list:
+		print 'length of data_dict before removing ' + feature + ' : ' + str(len(data_dict))
 		people_to_remove = remove_feature_outliers(data_dictionary, feature)
 		for person in people_to_remove:
 			del data_dictionary[person]
+		print 'length of data_dict after removing ' + feature + ' : ' + str(len(data_dict))
 
 	return data_dictionary
 
@@ -99,8 +101,6 @@ def create_features(data_dictionary):
 
 
 	return data_dictionary
-
-data_dict = create_features(data_dict)
 
 '''
 for elem in data_dict:
@@ -134,21 +134,28 @@ def scale_all_features(features_list):
 		data_dict = scale_feature(feature)
 	return data_dict
 
+def create_new_features_list(features, new_features):
+	for feature in new_features:
+		features.append(feature)
+	return features
+
 def run(data_dict, features):
+	print 'initial length of data_dict: ' + str(len(data_dict))
 	# remove all outliers and scale all features except our target 'poi'
 	new_features = list(features)
 	new_features.remove('poi')
 	data_dict = remove_all_outliers(data_dict, new_features)
+	print 'length of data_dict after removing outliers: ' + str(len(data_dict))
 	#data_dict = scale_all_features(new_features)
+	features = create_new_features_list(features, new_features)
+	print features 
+	data_dict = create_features(data_dict)
 
 	return data_dict
 
 
 ### Store to my_dataset for easy export below.
 my_dataset = run(data_dict, features_list)
-
-
-
 
 ### Extract features and labels from dataset for local testing
 data = featureFormat(my_dataset, features_list, sort_keys = True)
@@ -337,4 +344,5 @@ if False:
 ### that the version of poi_id.py that you submit can be run on its own and
 ### generates the necessary .pkl files for validating your results.
 
-dump_classifier_and_data(clf, my_dataset, features_list)
+if False:
+	dump_classifier_and_data(clf, my_dataset, features_list)
