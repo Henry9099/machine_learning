@@ -265,7 +265,7 @@ class_dict['svm'] = SVC()
 class_dict['NB'] = GaussianNB()
 
 other_params = {}
-other_params['kbest__k'] = [3]
+other_params['kbest__k'] = [2, 3, 4, 5]
 
 
 for dict in params:
@@ -276,7 +276,7 @@ for dict in params:
 def classifier_grid(classifer_name):
 	scaler = MinMaxScaler()
 	classifier = class_dict[classifer_name]
-	kbest = SelectKBest(k=2)
+	kbest = SelectKBest()
 	gs = Pipeline(steps = [('scaling', scaler),('kbest', kbest), (classifer_name, classifier)])
 	gclf = GridSearchCV(gs, params[classifer_name], scoring = 'f1', cv = sss)
 	gclf.fit(features, labels)
