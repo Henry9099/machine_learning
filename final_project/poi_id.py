@@ -236,9 +236,9 @@ dec_tree_params = {}
 dec_tree_params['dt__min_samples_split'] = [5,10,15,20]
 dec_tree_params['dt__presort'] = [True, False]
 #dec_tree_params['dt__max_features'] = [2]
-#dec_tree_params['dt__max_depth'] = [None, 8,6,4,2]
-#dec_tree_params['dt__min_samples_leaf'] = [1,2,5,10]
-#dec_tree_params['dt__max_leaf_nodes'] = [None, 4,8,12,20]
+dec_tree_params['dt__max_depth'] = [None, 8,6,4,2]
+dec_tree_params['dt__min_samples_leaf'] = [1,2,5,10]
+dec_tree_params['dt__max_leaf_nodes'] = [None, 4,8,12,20]
 
 # SVM parameters for the GridSearch
 svm_params = {}
@@ -251,7 +251,7 @@ NB_params = {}
 
 params = {}
 params['dt'] = dec_tree_params
-params['svm'] = svm_params
+# params['svm'] = svm_params
 params['NB'] = NB_params
 
 class_dict = {}
@@ -362,5 +362,5 @@ if False:
 ### that the version of poi_id.py that you submit can be run on its own and
 ### generates the necessary .pkl files for validating your results.
 
-if False:
+if True:
 	dump_classifier_and_data(clf, my_dataset, features_list)
