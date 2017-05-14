@@ -70,11 +70,9 @@ def remove_feature_outliers(data_dict, feature):
 def remove_all_outliers(data_dictionary, features_list):
 	# loop through all features in feature list and remove outliers
 	for feature in features_list:
-		print 'length of data_dict before removing ' + feature + ' : ' + str(len(data_dict))
 		people_to_remove = remove_feature_outliers(data_dictionary, feature)
 		for person in people_to_remove:
 			del data_dictionary[person]
-		print 'length of data_dict after removing ' + feature + ' : ' + str(len(data_dict))
 
 	return data_dictionary
 
@@ -140,15 +138,12 @@ def create_new_features_list(features, new_features):
 	return features
 
 def run(data_dict, features):
-	print 'initial length of data_dict: ' + str(len(data_dict))
 	# remove all outliers and scale all features except our target 'poi'
 	new_features = list(features)
 	new_features.remove('poi')
 	data_dict = remove_all_outliers(data_dict, new_features)
-	print 'length of data_dict after removing outliers: ' + str(len(data_dict))
 	#data_dict = scale_all_features(new_features)
 	features = create_new_features_list(features, new_features)
-	print features 
 	data_dict = create_features(data_dict)
 
 	return data_dict
@@ -170,7 +165,7 @@ labels, features = targetFeatureSplit(data)
 ### http://scikit-learn.org/stable/modules/pipeline.html
 
 # Provided to give you a starting point. Try a variety of classifiers.
-from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn import tree
@@ -285,7 +280,8 @@ def classifier_grid(classifer_name):
 	accuracy = accuracy_score(pred, labels)
 	recall = recall_score(pred, labels, average = 'weighted')
 	precision = precision_score(pred,labels, average = 'weighted')
-	return clf, accuracy, recall, precision
+	f1 = f1_score(pred, labels, average = 'weighted')
+	return clf, accuracy, recall, precision, f1
 
 def tune_classifiers():
 	result_dict = {}
@@ -296,26 +292,48 @@ def tune_classifiers():
 		result_dict[param]['accuracy'] = best_est[1]
 		result_dict[param]['recall'] = best_est[2]
 		result_dict[param]['precision'] = best_est[3]
+		result_dict[param]['f1'] = best_est[4]
 	return result_dict
 
 results = tune_classifiers()
 
-def show_results(results_dict):
+def best_classifier(results_dict):
+	# runs through the Naive Bays, SVM and Decision tree and selects the one with the highest f1 score
+	max_f1 = 0
+	best_classifier = ''
 	for entry in results_dict:
-		print ""
-		print entry
-		print 'accuracy: ' + str(results_dict[entry]['accuracy'])
-		print 'recall: ' + str(results_dict[entry]['recall'])
-		print 'precision: ' + str(results_dict[entry]['precision'])
+		if results_dict[entry]['f1'] > max_f1:
+			max_f1 = results_dict[entry]['f1']
+			best_classifier = results_dict[entry]['clf']
 
-show_results(results)
+	return best_classifier, max_f1
 
-clf = results['dt']['clf']
-clf = clf.named_steps['dt']
-print clf
-feature_importance = clf.feature_importances_
-print features_list[1:]
-print feature_importance
+best_classifier, max_f1 = best_classifier(results)
+
+print '\n\n'
+
+print 'optimal classifier selected...\n\nclassifier selected:\n'
+print best_classifier
+print '\n'
+print 'f1 score: ' + str(max_f1)
+print ""
+
+try:
+	clf = best_classifier.named_steps['dt']
+except:
+	try:
+		clf = best_classifier.named_steps['svm']
+	except:
+		try:
+			clf = best_classifier.named_steps['NB']
+		except:
+			'Error selecting classifier'
+try:
+	feature_importance = clf.feature_importances_
+	print feature_importance
+except:
+	pass
+
 
 
 '''
