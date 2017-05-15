@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 ### features_list is a list of strings, each of which is a feature name.
 ### The first feature must be "poi".
 features_list = ['poi','salary', 'bonus', 'expenses', 'exercised_stock_options', 'long_term_incentive', 'restricted_stock', 'director_fees', 'loan_advances', 'other']
-new_features_list = ['prop_email_from_poi', 'prop_stock_exercised', 'prop_email_to_poi']
+new_features_list = ['prop_email_from_poi', 'prop_stock_exercised', 'prop_email_to_poi', 'shared_receipt_with_poi', 'prop_payments_as_bonus']
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "r") as data_file:
 	data_dict = pickle.load(data_file)
@@ -69,10 +69,14 @@ def remove_feature_outliers(data_dict, feature):
 
 def remove_all_outliers(data_dictionary, features_list):
 	# loop through all features in feature list and remove outliers
+	initial_len_of_data_dict = len(data_dictionary)
 	for feature in features_list:
 		people_to_remove = remove_feature_outliers(data_dictionary, feature)
 		for person in people_to_remove:
+			print 'Removing: ' + person
 			del data_dictionary[person]
+	final_len_of_data_dict = len(data_dictionary)
+	print '\nAll outliers removed...' + str(final_len_of_data_dict) + ' observations remaining\n'
 
 	return data_dictionary
 
@@ -102,6 +106,24 @@ def create_features(data_dictionary):
 		except:
 			data_dictionary[elem]['prop_stock_exercised'] = 'NaN'
 
+		# add bonus as proportion of total payments
+		try:
+			data_dictionary[elem]['prop_payments_as_bonus'] = int(data_dictionary[elem]['bonus']) / int(data_dictionary[elem]['total_payments'])
+		except:
+			data_dictionary[elem]['prop_payments_as_bonus'] = 'NaN'
+
+		# add payments / defferred income
+		try:
+			data_dictionary[elem]['prop_income_not_deferred'] = int(data_dictionary[elem]['total_payments']) / int(data_dictionary[elem]['deferred_income'])
+		except:
+			data_dictionary[elem]['prop_income_not_deferred'] = 'NaN'
+
+		# add messages with pois as proportion of all messages sent/ received
+		try:
+			data_dictionary[elem]['prop_messages_with_poi'] = (int(data_dictionary[elem]['from_this_person_to_poi']) + int(data_dictionary[elem]['from poi_to_this_person']) \
+			 + int(data_dictionary[elem]['shared_receipt_with_poi'])) / (int(data_dictionary[elem]['to_messages']) + int(data_dictionary[elem]['from_messages']))
+		except:
+			data_dictionary[elem]['prop_messages_with_poi'] = 'NaN'
 
 
 	return data_dictionary
@@ -190,59 +212,21 @@ from sklearn.cross_validation import train_test_split
 features_train, features_test, labels_train, labels_test = \
 	train_test_split(features, labels, test_size=0.3, random_state=42)
 
-# deprecated due to classifierGrid below
-if False:
-	clf = GaussianNB()
-	clf.fit(features,labels)
-	pred = clf.predict(features)
-	accuracy = accuracy_score(pred, labels)
-	recall = recall_score(pred, labels)
-	precision = precision_score(pred, labels)
-	print 'accuracy of Naive Bayes is: ' + str(accuracy)
-	print 'recall of Naive Bayes is: ' + str(recall)
-	print 'precision of Naive Bayes is: ' + str(precision)
-
-
-# deprecated due to classifierGrid below
-if False:
-	clf = SVC(kernel = 'rbf', gamma = 5, C = 5)
-	clf.fit(features,labels)
-	pred = clf.predict(features)
-	accuracy = accuracy_score(pred, labels)
-	recall = recall_score(pred, labels)
-	precision = precision_score(pred, labels)
-	print 'accuracy of SVM is: ' + str(accuracy)
-	print 'recall of SVM is: ' + str(recall)
-	print 'precision of SVM is: ' + str(precision)
-
-# deprecated due to classifierGrid below
-if False:
-	clf = tree.DecisionTreeClassifier(min_samples_split = 10)
-	clf.fit(features, labels)
-	pred = clf.predict(features)
-	accuracy = accuracy_score(pred, labels)
-	recall = recall_score(pred, labels)
-	precision = precision_score(pred, labels)
-	print clf
-	'''print 'accuracy of Decision Trees is: ' + str(accuracy)
-	print 'recall of Decision Trees is: ' + str(recall)
-	print 'precision of Decision Trees is: ' + str(precision)'''
-
-
 
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.feature_selection import SelectKBest
 from sklearn.ensemble import AdaBoostClassifier
+from sklearn.decomposition import PCA
 
 sss = StratifiedShuffleSplit(random_state = 42)
 
 # decision tree parameters for the GridSearch
 dec_tree_params = {}
-dec_tree_params['dt__min_samples_split'] = [5, 10, 15, 20]
+dec_tree_params['dt__min_samples_split'] = [2, 5, 10, 15, 20]
 dec_tree_params['dt__presort'] = [True, False]
-#dec_tree_params['dt__max_features'] = [2]
+# dec_tree_params['dt__max_features'] = [2]
 # dec_tree_params['dt__max_depth'] = [None, 8,6,4,2]
 # dec_tree_params['dt__min_samples_leaf'] = [1,2,5,10]
 # dec_tree_params['dt__max_leaf_nodes'] = [None, 4,8,12,20]
@@ -259,15 +243,15 @@ NB_params = {}
 # AdaBoost parameters for GridSearch
 Ada_params = {}
 Ada_params['ada__base_estimator'] = [tree.DecisionTreeClassifier()]
-#Ada_params['ada__n_estimators'] = [25, 50, 75, 100]
-#Ada_params['ada__learning_rate'] = [0.5, 1, 1.5]
+Ada_params['ada__n_estimators'] = [15]
+Ada_params['ada__learning_rate'] = [0.5, 1, 1.5]
 
 
 params = {}
 params['dt'] = dec_tree_params
-# params['svm'] = svm_params
+params['svm'] = svm_params
 params['NB'] = NB_params
-# params['ada'] = Ada_params
+#params['ada'] = Ada_params
 
 class_dict = {}
 class_dict['dt'] = tree.DecisionTreeClassifier(random_state = 42)
@@ -276,7 +260,9 @@ class_dict['NB'] = GaussianNB()
 class_dict['ada'] = AdaBoostClassifier(random_state = 42)
 
 other_params = {}
-other_params['kbest__k'] = [2, 3, 4, 5]
+other_params['kbest__k'] = [14]
+other_params['pca__n_components'] = [2,3,4]
+other_params['pca__whiten'] = [True]
 
 
 for dict in params:
@@ -288,7 +274,8 @@ def classifier_grid(classifer_name):
 	scaler = MinMaxScaler()
 	classifier = class_dict[classifer_name]
 	kbest = SelectKBest()
-	gs = Pipeline(steps = [('scaling', scaler),('kbest', kbest), (classifer_name, classifier)])
+	pca = PCA(random_state = 42)
+	gs = Pipeline(steps = [('scaling', scaler), ('kbest', kbest), ('pca', pca), (classifer_name, classifier)])
 	gclf = GridSearchCV(gs, params[classifer_name], scoring = 'f1', cv = sss)
 	gclf.fit(features, labels)
 	clf = gclf.best_estimator_
@@ -333,14 +320,12 @@ print best_classifier
 print '\n'
 print 'f1 score: ' + str(max_f1)
 print ""
-print ""
 
 final_features_list = []
 support = best_classifier.named_steps['kbest'].get_support()
 for i, boole in enumerate(support):
 	if boole == True:
 		final_features_list.append(features_list[i+1])
-
 
 for classifier in ['dt', 'svm', 'NB', 'ada']:
 	try:
@@ -364,3 +349,5 @@ except:
 
 if True:
 	dump_classifier_and_data(clf, my_dataset, features_list)
+	from tester import test_classifier
+	test_classifier(clf, data_dict, features_list)
