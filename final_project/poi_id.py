@@ -14,8 +14,8 @@ import matplotlib.pyplot as plt
 ### Task 1: Select what features you'll use.
 ### features_list is a list of strings, each of which is a feature name.
 ### The first feature must be "poi".
-features_list = ['poi','salary', 'bonus', 'expenses', 'exercised_stock_options', 'long_term_incentive', 'restricted_stock']
-new_features = ['prop_email_from_poi', 'prop_stock_exercised']
+features_list = ['poi','salary', 'bonus', 'expenses', 'exercised_stock_options', 'long_term_incentive', 'restricted_stock', 'director_fees', 'loan_advances', 'other']
+new_features = ['prop_email_from_poi', 'prop_stock_exercised', 'prop_email_to_poi']
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "r") as data_file:
 	data_dict = pickle.load(data_file)
@@ -89,6 +89,12 @@ def create_features(data_dictionary):
 			data_dictionary[elem]['prop_email_from_poi'] = int(data_dictionary[elem]['from_poi_to_this_person']) / int(data_dictionary[elem]['from_messages'])
 		except:
 			data_dictionary[elem]['prop_email_from_poi'] = 'NaN'
+
+		#add proportion of to_emails to poi
+		try:
+			data_dictionary[elem]['prop_email_to_poi'] = int(data_dictionary[elem]['from_this_person_to_poi']) / int(data_dictionary[elem]['to_messages'])
+		except:
+			data_dictionary[elem]['prop_email_to_poi'] = 'NaN'			
 
 		# add exercised_stock_options as proportion of total_stock_value
 		try:
@@ -228,12 +234,13 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.feature_selection import SelectKBest
+from sklearn.ensemble import AdaBoostClassifier
 
 sss = StratifiedShuffleSplit(random_state = 42)
 
 # decision tree parameters for the GridSearch
 dec_tree_params = {}
-dec_tree_params['dt__min_samples_split'] = [5,10,15,20]
+dec_tree_params['dt__min_samples_split'] = [5, 10, 15, 20]
 dec_tree_params['dt__presort'] = [True, False]
 #dec_tree_params['dt__max_features'] = [2]
 # dec_tree_params['dt__max_depth'] = [None, 8,6,4,2]
@@ -242,22 +249,31 @@ dec_tree_params['dt__presort'] = [True, False]
 
 # SVM parameters for the GridSearch
 svm_params = {}
-svm_params['svm__C'] = [1,3,5,7,9,15]
-svm_params['svm__gamma'] = [1,3,5,7,9,15]
+svm_params['svm__C'] = [1, 3, 5, 7, 9, 15]
+svm_params['svm__gamma'] = [1, 3, 5, 7, 9, 15]
 svm_params['svm__kernel'] = ['linear', 'rbf']
 
 # Naive Bays parameters for the GridSearch
 NB_params = {}
 
+# AdaBoost parameters for GridSearch
+Ada_params = {}
+Ada_params['ada__base_estimator'] = [tree.DecisionTreeClassifier()]
+#Ada_params['ada__n_estimators'] = [25, 50, 75, 100]
+#Ada_params['ada__learning_rate'] = [0.5, 1, 1.5]
+
+
 params = {}
 params['dt'] = dec_tree_params
 # params['svm'] = svm_params
 params['NB'] = NB_params
+params['ada'] = Ada_params
 
 class_dict = {}
-class_dict['dt'] = tree.DecisionTreeClassifier()
-class_dict['svm'] = SVC()
+class_dict['dt'] = tree.DecisionTreeClassifier(random_state = 42)
+class_dict['svm'] = SVC(random_state = 42)
 class_dict['NB'] = GaussianNB()
+class_dict['ada'] = AdaBoostClassifier(random_state = 42)
 
 other_params = {}
 other_params['kbest__k'] = [2, 3, 4, 5]
@@ -327,7 +343,10 @@ except:
 		try:
 			clf = best_classifier.named_steps['NB']
 		except:
-			'Error selecting classifier'
+			try:
+				clf = best_classifier.named_steps['ada']
+			except:
+				print 'error gathering classifier'
 try:
 	feature_importance = clf.feature_importances_
 	print feature_importance
