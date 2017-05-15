@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 ### features_list is a list of strings, each of which is a feature name.
 ### The first feature must be "poi".
 features_list = ['poi','salary', 'bonus', 'expenses', 'exercised_stock_options', 'long_term_incentive', 'restricted_stock', 'director_fees', 'loan_advances', 'other']
-new_features_list = ['prop_email_from_poi', 'prop_stock_exercised', 'prop_email_to_poi', 'shared_receipt_with_poi', 'prop_payments_as_bonus', 'prop_income_not_deferred', 'prop_messages_with_poi' ]
+new_features_list = ['prop_email_from_poi', 'prop_email_to_poi', 'prop_stock_ex', 'shared_receipt_with_poi', 'prop_payments_as_bonus', 'prop_income_not_deferred', 'prop_messages_with_poi']
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "r") as data_file:
 	data_dict = pickle.load(data_file)
@@ -81,52 +81,46 @@ def remove_all_outliers(data_dictionary, features_list):
 	return data_dictionary
 
 
-
-
 ### Task 3: Create new feature(s)
 from sklearn.preprocessing import MinMaxScaler
 
 def create_features(data_dictionary):
+	'''
+	new_features_list = ['prop_email_from_poi', 'prop_stock_exercised', 'prop_email_to_poi', \
+	'shared_receipt_with_poi', 'prop_payments_as_bonus', 'prop_income_not_deferred',\
+	 'prop_messages_with_poi' ]	
+	'''	
 	for elem in data_dictionary:
-		# add proportion of from_emails from poi
-		try:
-			data_dictionary[elem]['prop_email_from_poi'] = int(data_dictionary[elem]['from_poi_to_this_person']) / int(data_dictionary[elem]['from_messages'])
-		except:
-			data_dictionary[elem]['prop_email_from_poi'] = 'NaN'
+		from_poi = float(data_dictionary[elem]['from_poi_to_this_person'])
+		to_poi = float(data_dictionary[elem]['from_this_person_to_poi'])
+		from_messages = float(data_dictionary[elem]['from_messages'])
+		to_messages = float(data_dictionary[elem]['to_messages'])
+		stock_ex = float(data_dictionary[elem]['exercised_stock_options'])
+		stock_val = float(data_dictionary[elem]['total_stock_value'])
+		bonus = float(float(data_dictionary[elem]['bonus']))
+		total_payments = float(data_dictionary[elem]['total_payments'])
+		deferred_income = float(data_dictionary[elem]['deferred_income'])
+		shared_receipt = float(data_dictionary[elem]['shared_receipt_with_poi'])
 
-		#add proportion of to_emails to poi
-		try:
-			data_dictionary[elem]['prop_email_to_poi'] = int(data_dictionary[elem]['from_this_person_to_poi']) / int(data_dictionary[elem]['to_messages'])
-		except:
-			data_dictionary[elem]['prop_email_to_poi'] = 'NaN'			
 
-		# add exercised_stock_options as proportion of total_stock_value
-		try:
-			data_dictionary[elem]['prop_stock_exercised'] = int(data_dictionary[elem]['exercised_stock_options']) / int(data_dictionary[elem]['total_stock_value'])
-		except:
-			data_dictionary[elem]['prop_stock_exercised'] = 'NaN'
+		data_dictionary[elem]['prop_email_from_poi'] = from_poi / from_messages
+		data_dictionary[elem]['prop_email_to_poi'] = to_poi / to_messages
+		data_dictionary[elem]['prop_stock_ex'] = stock_ex / stock_val
+		data_dictionary[elem]['prop_payments_as_bonus'] = bonus / total_payments
+		data_dictionary[elem]['prop_income_not_deferred'] = deferred_income / total_payments
+		data_dictionary[elem]['prop_messages_with_poi'] = (from_poi + to_poi + shared_receipt) / (from_messages + to_messages)
 
-		# add bonus as proportion of total payments
-		try:
-			data_dictionary[elem]['prop_payments_as_bonus'] = int(data_dictionary[elem]['bonus']) / int(data_dictionary[elem]['total_payments'])
-		except:
-			data_dictionary[elem]['prop_payments_as_bonus'] = 'NaN'
 
-		# add payments / defferred income
-		try:
-			data_dictionary[elem]['prop_income_not_deferred'] = int(data_dictionary[elem]['total_payments']) / int(data_dictionary[elem]['deferred_income'])
-		except:
-			data_dictionary[elem]['prop_income_not_deferred'] = 'NaN'
-
-		# add messages with pois as proportion of all messages sent/ received
-		try:
-			data_dictionary[elem]['prop_messages_with_poi'] = (int(data_dictionary[elem]['from_this_person_to_poi']) + int(data_dictionary[elem]['from poi_to_this_person']) \
-			 + int(data_dictionary[elem]['shared_receipt_with_poi'])) / (int(data_dictionary[elem]['to_messages']) + int(data_dictionary[elem]['from_messages']))
-		except:
-			data_dictionary[elem]['prop_messages_with_poi'] = 'NaN'
-
+		for feature in new_features_list:
+			try:
+				type(int(data_dictionary[elem][feature])) == type(5)
+			except:
+				data_dictionary[elem][feature] = 'NaN'
 
 	return data_dictionary
+
+
+
 
 def create_new_features_list(features, new_features):
 	for feature in new_features:
@@ -148,8 +142,12 @@ def run(data_dict, features):
 ### Store to my_dataset for easy export below.
 my_dataset, features_list = run(data_dict, features_list)
 
+
 ### Extract features and labels from dataset for local testing
 data = featureFormat(my_dataset, features_list, sort_keys = True)
+
+#for elem in my_dataset:
+#	print my_dataset[elem]['prop_payments_as_bonus']
 
 
 labels, features = targetFeatureSplit(data)
@@ -166,8 +164,6 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn import tree
 
-for elem in features:
-	print elem[8], elem[11], elem[13]
 ### Task 5: Tune your classifier to achieve better than .3 precision and recall 
 ### using our testing script. Check the tester.py script in the final project
 ### folder for details on the evaluation method, especially the test_classifier
@@ -217,7 +213,7 @@ Ada_params['ada__learning_rate'] = [0.5, 1, 1.5]
 
 params = {}
 params['dt'] = dec_tree_params
-params['svm'] = svm_params
+#params['svm'] = svm_params
 params['NB'] = NB_params
 #params['ada'] = Ada_params
 
@@ -228,8 +224,8 @@ class_dict['NB'] = GaussianNB()
 class_dict['ada'] = AdaBoostClassifier(random_state = 42)
 
 other_params = {}
-other_params['kbest__k'] = [14]
-other_params['pca__n_components'] = [2,3,4]
+other_params['kbest__k'] = [5,7]
+other_params['pca__n_components'] = [3, 4, 5]
 other_params['pca__whiten'] = [True]
 
 
