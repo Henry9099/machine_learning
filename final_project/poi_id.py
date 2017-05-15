@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 ### features_list is a list of strings, each of which is a feature name.
 ### The first feature must be "poi".
 features_list = ['poi','salary', 'bonus', 'expenses', 'exercised_stock_options', 'long_term_incentive', 'restricted_stock', 'director_fees', 'loan_advances', 'other']
-new_features_list = ['prop_email_from_poi', 'prop_stock_exercised', 'prop_email_to_poi', 'shared_receipt_with_poi', 'prop_payments_as_bonus']
+new_features_list = ['prop_email_from_poi', 'prop_stock_exercised', 'prop_email_to_poi', 'shared_receipt_with_poi', 'prop_payments_as_bonus', 'prop_income_not_deferred', 'prop_messages_with_poi' ]
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "r") as data_file:
 	data_dict = pickle.load(data_file)
@@ -128,38 +128,6 @@ def create_features(data_dictionary):
 
 	return data_dictionary
 
-'''
-for elem in data_dict:
-	if data_dict[elem]['bonus'] != 'NaN':
-		print elem, data_dict[elem]['poi']
-'''
-
-def min_max(feature):
-	#find minimum and maximum value of feature, ignoring NaNs - now deprecated as done in the Pipline
-	value_list = []
-	for elem in data_dict:
-		value_list.append(data_dict[elem][feature])
-	feature_numpy = np.asarray(value_list).astype(float)
-	maxi = np.nanmax(feature_numpy)
-	mini = np.nanmin(feature_numpy)
-	return mini, maxi
-
-
-def scale_feature(feature):
-	# manual MinMax scalar as to avoid NaNs - now deprecated as done in the Pipline
-	mini, maxi = min_max(feature)
-	for elem in data_dict:
-		value = data_dict[elem][feature]
-		if value != 'NaN':
-			data_dict[elem][feature] = (data_dict[elem][feature] - mini) / (maxi - mini)
-	return data_dict
-
-def scale_all_features(features_list):
-	#loop through all features and scale - now deprecated as done in the Pipline
-	for feature in features_list:
-		data_dict = scale_feature(feature)
-	return data_dict
-
 def create_new_features_list(features, new_features):
 	for feature in new_features:
 		features.append(feature)
@@ -198,8 +166,8 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn import tree
 
-
-
+for elem in features:
+	print elem[8], elem[11], elem[13]
 ### Task 5: Tune your classifier to achieve better than .3 precision and recall 
 ### using our testing script. Check the tester.py script in the final project
 ### folder for details on the evaluation method, especially the test_classifier
