@@ -14,8 +14,12 @@ import matplotlib.pyplot as plt
 ### Task 1: Select what features you'll use.
 ### features_list is a list of strings, each of which is a feature name.
 ### The first feature must be "poi".
-features_list = ['poi','salary', 'bonus', 'expenses', 'exercised_stock_options', 'long_term_incentive', 'restricted_stock', 'director_fees', 'loan_advances', 'other']
-new_features_list = ['prop_email_from_poi', 'prop_email_to_poi', 'prop_stock_ex', 'shared_receipt_with_poi', 'prop_payments_as_bonus', 'prop_income_not_deferred', 'prop_messages_with_poi']
+initial_features_list =  ['salary', 'deferral_payments', 'total_payments', 'loan_advances', 'bonus', 'restricted_stock_deferred', \
+'deferred_income', 'total_stock_value', 'expenses', 'exercised_stock_options', 'other', 'long_term_incentive', 'restricted_stock', \
+'director_fees', 'to_messages', 'email_address', 'from_poi_to_this_person', 'from_messages', 'from_this_person_to_poi', 'shared_receipt_with_poi']
+features_list = ['poi','salary', 'bonus', 'expenses', 'exercised_stock_options', 'long_term_incentive', 'restricted_stock', 'director_fees', 'other']
+#new_features_list = ['prop_email_from_poi', 'prop_email_to_poi', 'prop_stock_ex', 'shared_receipt_with_poi', 'prop_payments_as_bonus', 'prop_income_not_deferred', 'prop_messages_with_poi']
+new_features_list = ['prop_stock_ex']
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "r") as data_file:
 	data_dict = pickle.load(data_file)
@@ -36,6 +40,27 @@ def graph_feature_distribution(data_dict, feature):
 	plt.xlabel(feature)
 	plt.ylabel('count')
 	plt.show()
+
+def data_overview(data_dictionary, features_list):
+	num_data_points = len(data_dictionary)
+	num_poi = 0
+	missing_values = {}
+	for feature in initial_features_list:
+		missing_values[feature] = 0
+	for elem in data_dictionary:
+		if data_dictionary[elem]['poi'] == True:
+			num_poi += 1
+		for feature in data_dictionary[elem]:
+			if data_dictionary[elem][feature] == 'NaN':
+				missing_values[feature] += 1
+
+	print '\nNumber of data points in the original dataset: ' + str(num_data_points)
+	print '\nNumber of POIs in the dataset: ' + str(num_poi) + ' (' + str(int(float(num_poi)/num_data_points * 100)) + '%)'
+	print '\nNumber of features used: ' + str(len(features_list))
+	print '\nNumber of missing data points by feature: '
+	print missing_values
+	print ""
+
 
 def find_fence(feature):
 	# using a very wide fence as i only intend to catch extreme outliers/ wrong data entries
@@ -71,9 +96,12 @@ def remove_all_outliers(data_dictionary, features_list):
 	# loop through all features in feature list and remove outliers
 	initial_len_of_data_dict = len(data_dictionary)
 	for feature in features_list:
+		print 'Remove outliers from ' + feature + '...'
 		people_to_remove = remove_feature_outliers(data_dictionary, feature)
+		if len(people_to_remove) == 0:
+			print 'No one to remove'
 		for person in people_to_remove:
-			print 'Removing: ' + person
+			print 'Removing ' + person
 			del data_dictionary[person]
 	final_len_of_data_dict = len(data_dictionary)
 	print '\nAll outliers removed...' + str(final_len_of_data_dict) + ' observations remaining\n'
@@ -131,11 +159,11 @@ def run(data_dict, features):
 	# remove all outliers and scale all features except our target 'poi'
 	new_features = list(features)
 	new_features.remove('poi')
+	appended_features = create_new_features_list(features, new_features_list)
+	data_overview(data_dict, appended_features)
 	data_dict = remove_all_outliers(data_dict, new_features)
-	#data_dict = scale_all_features(new_features)
-	#features = create_new_features_list(features, new_features_list)
+	features = appended_features
 	data_dict = create_features(data_dict)
-
 	return data_dict, features
 
 
@@ -188,12 +216,12 @@ sss = StratifiedShuffleSplit(random_state = 42)
 
 # decision tree parameters for the GridSearch
 dec_tree_params = {}
-dec_tree_params['dt__min_samples_split'] = [2, 5, 10, 15, 20]
+dec_tree_params['dt__min_samples_split'] = [14, 15, 16]
 dec_tree_params['dt__presort'] = [True, False]
 # dec_tree_params['dt__max_features'] = [2]
 # dec_tree_params['dt__max_depth'] = [None, 8,6,4,2]
 # dec_tree_params['dt__min_samples_leaf'] = [1,2,5,10]
-# dec_tree_params['dt__max_leaf_nodes'] = [None, 4,8,12,20]
+dec_tree_params['dt__max_leaf_nodes'] = [None]
 
 # SVM parameters for the GridSearch
 svm_params = {}
@@ -224,9 +252,9 @@ class_dict['NB'] = GaussianNB()
 class_dict['ada'] = AdaBoostClassifier(random_state = 42)
 
 other_params = {}
-other_params['kbest__k'] = [8]
-other_params['pca__n_components'] = [3, 4, 5]
-other_params['pca__whiten'] = [True]
+other_params['kbest__k'] = [4]
+#other_params['pca__n_components'] = [3, 4]
+#other_params['pca__whiten'] = [True, False]
 
 
 for dict in params:
@@ -239,7 +267,7 @@ def classifier_grid(classifer_name):
 	classifier = class_dict[classifer_name]
 	kbest = SelectKBest()
 	pca = PCA(random_state = 42)
-	gs = Pipeline(steps = [('scaling', scaler), ('kbest', kbest), ('pca', pca), (classifer_name, classifier)])
+	gs = Pipeline(steps = [('scaling', scaler), ('kbest', kbest), (classifer_name, classifier)])
 	gclf = GridSearchCV(gs, params[classifer_name], scoring = 'f1', cv = sss)
 	gclf.fit(features, labels)
 	clf = gclf.best_estimator_
@@ -260,6 +288,9 @@ def tune_classifiers():
 		result_dict[param]['recall'] = best_est[2]
 		result_dict[param]['precision'] = best_est[3]
 		result_dict[param]['f1'] = best_est[4]
+
+		print 'Classifier ' + param + ' has f1 score ' + str(result_dict[param]['f1'])
+	print '\nSelecting best classifier based on f1 score...'
 	return result_dict
 
 results = tune_classifiers()
@@ -303,6 +334,7 @@ try:
 	feature_importance = clf.feature_importances_
 	for i in range(0, len(feature_importance)):
 		print final_features_list[i], feature_importance[i]
+	print ""
 except:
 	pass
 
