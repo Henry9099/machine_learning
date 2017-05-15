@@ -133,7 +133,7 @@ def run(data_dict, features):
 	new_features.remove('poi')
 	data_dict = remove_all_outliers(data_dict, new_features)
 	#data_dict = scale_all_features(new_features)
-	features = create_new_features_list(features, new_features_list)
+	#features = create_new_features_list(features, new_features_list)
 	data_dict = create_features(data_dict)
 
 	return data_dict, features
@@ -224,7 +224,7 @@ class_dict['NB'] = GaussianNB()
 class_dict['ada'] = AdaBoostClassifier(random_state = 42)
 
 other_params = {}
-other_params['kbest__k'] = [5,7]
+other_params['kbest__k'] = [8]
 other_params['pca__n_components'] = [3, 4, 5]
 other_params['pca__whiten'] = [True]
 
