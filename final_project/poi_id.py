@@ -12,14 +12,17 @@ import matplotlib.pyplot as plt
 
 
 ### Task 1: Select what features you'll use.
-### features_list is a list of strings, each of which is a feature name.
-### The first feature must be "poi".
+# all features in dataset
 initial_features_list =  ['salary', 'deferral_payments', 'total_payments', 'loan_advances', 'bonus', 'restricted_stock_deferred', \
 'deferred_income', 'total_stock_value', 'expenses', 'exercised_stock_options', 'other', 'long_term_incentive', 'restricted_stock', \
 'director_fees', 'to_messages', 'email_address', 'from_poi_to_this_person', 'from_messages', 'from_this_person_to_poi', 'shared_receipt_with_poi']
+
+# features i'll analyse
 features_list = ['poi','salary', 'bonus', 'expenses', 'exercised_stock_options', 'long_term_incentive', 'restricted_stock', 'director_fees', 'other']
-#new_features_list = ['prop_email_from_poi', 'prop_email_to_poi', 'prop_stock_ex', 'shared_receipt_with_poi', 'prop_payments_as_bonus', 'prop_income_not_deferred', 'prop_messages_with_poi']
+
+# features i created that are in final analysis
 new_features_list = ['prop_stock_ex']
+
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "r") as data_file:
 	data_dict = pickle.load(data_file)
@@ -113,11 +116,6 @@ def remove_all_outliers(data_dictionary, features_list):
 from sklearn.preprocessing import MinMaxScaler
 
 def create_features(data_dictionary):
-	'''
-	new_features_list = ['prop_email_from_poi', 'prop_stock_exercised', 'prop_email_to_poi', \
-	'shared_receipt_with_poi', 'prop_payments_as_bonus', 'prop_income_not_deferred',\
-	 'prop_messages_with_poi' ]	
-	'''	
 	for elem in data_dictionary:
 		from_poi = float(data_dictionary[elem]['from_poi_to_this_person'])
 		to_poi = float(data_dictionary[elem]['from_this_person_to_poi'])
@@ -156,7 +154,7 @@ def create_new_features_list(features, new_features):
 	return features
 
 def run(data_dict, features):
-	# remove all outliers and scale all features except our target 'poi'
+	# remove all outliers, return statistics on dataset and add new features
 	new_features = list(features)
 	new_features.remove('poi')
 	appended_features = create_new_features_list(features, new_features_list)
@@ -170,40 +168,20 @@ def run(data_dict, features):
 ### Store to my_dataset for easy export below.
 my_dataset, features_list = run(data_dict, features_list)
 
-
 ### Extract features and labels from dataset for local testing
 data = featureFormat(my_dataset, features_list, sort_keys = True)
-
-#for elem in my_dataset:
-#	print my_dataset[elem]['prop_payments_as_bonus']
-
-
 labels, features = targetFeatureSplit(data)
 
 ### Task 4: Try a varity of classifiers
-### Please name your classifier clf for easy export below.
-### Note that if you want to do PCA or other multi-stage operations,
-### you'll need to use Pipelines. For more info:
-### http://scikit-learn.org/stable/modules/pipeline.html
-
-# Provided to give you a starting point. Try a variety of classifiers.
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn import tree
 
 ### Task 5: Tune your classifier to achieve better than .3 precision and recall 
-### using our testing script. Check the tester.py script in the final project
-### folder for details on the evaluation method, especially the test_classifier
-### function. Because of the small size of the dataset, the script uses
-### stratified shuffle split cross validation. For more info: 
-### http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html
-
-# Example starting point. Try investigating other evaluation techniques!
 from sklearn.cross_validation import train_test_split
 features_train, features_test, labels_train, labels_test = \
 	train_test_split(features, labels, test_size=0.3, random_state=42)
-
 
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
@@ -218,10 +196,10 @@ sss = StratifiedShuffleSplit(random_state = 42)
 dec_tree_params = {}
 dec_tree_params['dt__min_samples_split'] = [14, 15, 16]
 dec_tree_params['dt__presort'] = [True, False]
+dec_tree_params['dt__max_leaf_nodes'] = [None]
 # dec_tree_params['dt__max_features'] = [2]
 # dec_tree_params['dt__max_depth'] = [None, 8,6,4,2]
 # dec_tree_params['dt__min_samples_leaf'] = [1,2,5,10]
-dec_tree_params['dt__max_leaf_nodes'] = [None]
 
 # SVM parameters for the GridSearch
 svm_params = {}
@@ -237,7 +215,6 @@ Ada_params = {}
 Ada_params['ada__base_estimator'] = [tree.DecisionTreeClassifier()]
 Ada_params['ada__n_estimators'] = [15]
 Ada_params['ada__learning_rate'] = [0.5, 1, 1.5]
-
 
 params = {}
 params['dt'] = dec_tree_params
@@ -260,7 +237,6 @@ other_params['kbest__k'] = [4]
 for dict in params:
 	for parameter in other_params:
 		params[dict][parameter] = other_params[parameter]
-
 
 def classifier_grid(classifer_name):
 	scaler = MinMaxScaler()
@@ -343,7 +319,6 @@ except:
 ### that the version of poi_id.py that you submit can be run on its own and
 ### generates the necessary .pkl files for validating your results.
 
-if True:
-	dump_classifier_and_data(clf, my_dataset, features_list)
-	from tester import test_classifier
-	test_classifier(clf, data_dict, features_list)
+dump_classifier_and_data(clf, my_dataset, features_list)
+from tester import test_classifier
+test_classifier(clf, data_dict, features_list)
