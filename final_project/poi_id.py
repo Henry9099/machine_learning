@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 ### features_list is a list of strings, each of which is a feature name.
 ### The first feature must be "poi".
 features_list = ['poi','salary', 'bonus', 'expenses', 'exercised_stock_options', 'long_term_incentive', 'restricted_stock', 'director_fees', 'loan_advances', 'other']
-new_features = ['prop_email_from_poi', 'prop_stock_exercised', 'prop_email_to_poi']
+new_features_list = ['prop_email_from_poi', 'prop_stock_exercised', 'prop_email_to_poi']
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "r") as data_file:
 	data_dict = pickle.load(data_file)
@@ -149,14 +149,14 @@ def run(data_dict, features):
 	new_features.remove('poi')
 	data_dict = remove_all_outliers(data_dict, new_features)
 	#data_dict = scale_all_features(new_features)
-	features = create_new_features_list(features, new_features)
+	features = create_new_features_list(features, new_features_list)
 	data_dict = create_features(data_dict)
 
-	return data_dict
+	return data_dict, features
 
 
 ### Store to my_dataset for easy export below.
-my_dataset = run(data_dict, features_list)
+my_dataset, features_list = run(data_dict, features_list)
 
 ### Extract features and labels from dataset for local testing
 data = featureFormat(my_dataset, features_list, sort_keys = True)
@@ -267,7 +267,7 @@ params = {}
 params['dt'] = dec_tree_params
 # params['svm'] = svm_params
 params['NB'] = NB_params
-params['ada'] = Ada_params
+# params['ada'] = Ada_params
 
 class_dict = {}
 class_dict['dt'] = tree.DecisionTreeClassifier(random_state = 42)
@@ -333,48 +333,29 @@ print best_classifier
 print '\n'
 print 'f1 score: ' + str(max_f1)
 print ""
+print ""
+
+final_features_list = []
+support = best_classifier.named_steps['kbest'].get_support()
+for i, boole in enumerate(support):
+	if boole == True:
+		final_features_list.append(features_list[i+1])
+
+
+for classifier in ['dt', 'svm', 'NB', 'ada']:
+	try:
+		clf = best_classifier.named_steps[classifier]
+		break
+	except:
+		pass
 
 try:
-	clf = best_classifier.named_steps['dt']
-except:
-	try:
-		clf = best_classifier.named_steps['svm']
-	except:
-		try:
-			clf = best_classifier.named_steps['NB']
-		except:
-			try:
-				clf = best_classifier.named_steps['ada']
-			except:
-				print 'error gathering classifier'
-try:
+	'Features used and relative importances:\n'
 	feature_importance = clf.feature_importances_
-	print feature_importance
+	for i in range(0, len(feature_importance)):
+		print final_features_list[i], feature_importance[i]
 except:
 	pass
-
-
-
-'''
-scaler = MinMaxScaler()
-dt = tree.DecisionTreeClassifier()
-gs = Pipeline(steps = [('scaling', scaler), ('dt', dt)])
-dtcclf = GridSearchCV(gs, dec_tree_params, scoring = 'f1', verbose = 10)
-dtcclf.fit(features,labels)
-clf = dtcclf.best_estimator_
-print clf
-
-pred = clf.predict(features)
-accuracy = accuracy_score(pred, labels)
-print accuracy
-'''
-
-
-
-
-
-if False:
-	run_all_classifiers(features_train, features_test, labels_train, labels_test)
 
 ### Task 6: Dump your classifier, dataset, and features_list so anyone can
 ### check your results. You do not need to change anything below, but make sure
